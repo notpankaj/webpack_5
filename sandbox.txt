@@ -1,0 +1,450 @@
+npm i --save-dev webpack webpack-cli
+ 
+
+
+
+---------- default [ without configuation ] ---------
+run webpack : 
+            inside package.json
+            "scripts": {
+                "start": "webpack"
+            },
+
+Entry Point :   
+             by default webpack look's for index file inside src dir
+             which is "src/index.js" 
+
+Output Dir: 
+            when it find's Entry Point, it build all the files require
+            and minified into single js file , then we can add this sigle file
+            in our html page. which should be present in the same dir as main
+            EntryPoint file so all the import path match (../)
+
+mode:       
+            webpack by default run 'production' mode which minified out code
+            we can set it into development mode by set  { mode: "development" } in config 
+
+            
+---------- CUSTOME [ with configuation ] ---------
+touch webpack.config.js
+
+1.
+------------------ 
+### default mapped into config //this is the same default settig which webpack use's
+--------
+const path = require("path");
+
+module.exports = {
+  entry: "./src/index.js",
+  output: {
+    filename: "main.js",
+    path: path.resolve(__dirname, "dist"),
+  },
+};
+------------------
+### modifie scripts ---->  "start": "webpack --config webpack.config.js"
+------------------
+
+
+
+==============================
+2. development -OR- production
+==============================
+mode:       
+            webpack by default run 'production' mode which minified out code
+            we can set it into development mode by set  { mode: "development" } in config 
+----
+const path = require("path");
+
+module.exports = {
+  mode: "development",
+  entry: "./src/index.js",
+  output: {
+    filename: "main.js",
+    path: path.resolve(__dirname, "dist"),
+  },
+};
+----
+
+===========
+3. loader 
+===========
+npm i --save-dev style-loader css-loader
+
+loader :    
+        import "./test.css";
+        we have this file used in some js file so we need to convert it 
+        into valid js to work for this we need loader it is a css file so we 
+        used css-loader
+
+style-loader : 
+        but we have to also need to convert that js->css into css so browser can understand
+        for this we have to use style-loader 
+
+------------------
+const path = require("path");
+
+module.exports = {
+  //   mode: "development",
+  mode: "production",
+  entry: "./src/index.js",
+  output: {
+    filename: "main.js",
+    path: path.resolve(__dirname, "dist"),
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ["style-loader", "css-loader"],
+      },
+    ],
+  },
+};
+------------------
+sass
+-------------
+ npm i sass-loader node-sass 
+
+
+ const path = require("path");
+
+module.exports = {
+  //   mode: "development",
+  mode: "production",
+  entry: "./src/index.js",
+  output: {
+    filename: "main.js",
+    path: path.resolve(__dirname, "dist"),
+  },
+  module: {
+    rules: [
+      {
+        test: /\.scss$/,
+        use: ["style-loader", "css-loader", "sass-loader"],
+      },
+    ],
+  },
+};
+
+
+===========
+4. Cahae
+===========
+//hashing content //generates new filename only when content changes
+  output: {
+        filename: "main.[contenthash].js",
+        path: path.resolve(__dirname, "dist"),
+  },
+
+// our file will have random name so we have to somehow add that script to our html
+ which is not possible , so we have generate html also.
+
+- npm install --save-dev html-webpack-plugin
+
+const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+
+module.exports = {
+  plugins: [new HtmlWebpackPlugin()],
+};
+
+## this will generate html file having main.js but " NO HTML "
+# we have to make a template html to generate so we get our correct html
+
+//==============
+5. template
+//==============
+ use's the given html as template
+ plugins: [
+    new HtmlWebpackPlugin({
+      template: "./src/template.html",
+    }),
+  ],
+
+
+//==============
+6. code splitting dev / pro
+//==============
+1. create common file // which contains common stuff
+2. create dev file // which contains dev stuff
+3. create prod file // which contains prod stuff
+4.we have to merge them using 
+      -> npm i --save-dev webpack-merge 
+
+
+ "scripts": {
+    "start": "webpack --config webpack.dev.js",
+    "build": "webpack --config webpack.prod.js"
+  },
+---------------------------------------
+//webpack.common.js
+const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+
+module.exports = {
+  entry: "./src/index.js",
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: "./src/template.html",
+    }),
+  ],
+  module: {
+    rules: [
+      {
+        test: /\.scss$/,
+        use: ["style-loader", "css-loader", "sass-loader"],
+      },
+    ],
+  },
+};
+
+---------------------------------------
+//webpack.dev.js
+const path = require("path");
+const common = require("./webpack.common");
+const { merge } = require('webpack-merge');
+
+module.exports = merge(common, {
+  mode: "development",
+  output: {
+    filename: "main.js",
+    path: path.resolve(__dirname, "dist"),
+  },
+});
+---------------------------------------
+//webpack.prod.js
+const path = require("path");
+const common = require("./webpack.common");
+const { merge } = require('webpack-merge');
+module.exports = merge(common, {
+  mode: "production",
+  output: {
+    filename: "main.[contenthash].js",
+    path: path.resolve(__dirname, "dist"),
+  },
+});
+---------------------------------------
+
+
+==============================
+7.  setup a dev server
+==============================
+npm install webpack-dev-server --save-dev
+
+  "scripts": {
+    "start": "webpack-dev-server --config webpack.dev.js --open",
+    "build": "webpack --config webpack.prod.js"
+  },
+
+
+## dev server runs on memory so we dont /dist folder stuff  "which is prefered"
+  but when we need to split our code out we have to use 
+      --> npm run build   
+
+
+==============================
+8.  Html-loader, File-loader, & Clean-webpack
+==============================
+npm i --save-dev html-loader
+npm i --save-dev file-loader
+
+
+
+const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+
+
+//webpack.common.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.html$/,
+        use: ["html-loader"],
+      },
+      {
+        test: /\.(svg|png|jpg|jpeg|gif)$/,
+        use: {
+          loader: "file-loader",
+          options: {
+            name: "[name].[hash].[ext]",
+            outputPath: "imgs",
+          },
+        },
+      },
+    ],
+  },
+};
+
+## this handle html file and all the require files such as img src will be placed into given "outputPath" and connected
+
+//----- clean up prev build before building new build in dist ----// 
+npm install --save clean-webpack-plugin
+
+
+//webpack.prod.js
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+module.exports = merge(common, {
+  mode: "production",
+  plugins: [new CleanWebpackPlugin()],
+});
+
+
+==============================
+9. multiple bundle file 
+==============================
+1. create src/vendor.js
+2. change entry Point
+
+//webpack.common.js
+module.exports = {
+  entry: {
+    main: "./src/index.js",
+    vendor: "./src/vendor.js",
+  },
+};
+
+
+3. we have to all change the filename in both pord/dev 
+// webpack.prod.js
+module.exports = merge(common, {
+  mode: "production",
+  output: {
+    filename: "[name].[contenthash].bundle.js",
+    path: path.resolve(__dirname, "dist"),
+  },
+});
+// webpack.dev.js
+module.exports = merge(common, {
+  mode: "development",
+  output: {
+    filename: "[name].js",
+    path: path.resolve(__dirname, "dist"),
+  },
+});
+
+now it create to bundle main and vendor bundle
+
+==============================
+10. extracting html/css/js in its own file and mininfing 
+==============================
+
+/---- seprate css and js
+npm i mini-css-extract-plugin --save-dev
+// 1. activate plugin in webpack.prod.js
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+module.exports = merge(common, {
+  mode: "production",
+  plugins: [
+    new CleanWebpackPlugin(),
+    new MiniCssExtractPlugin({ filename: "[name].[contentHash].css" }),
+  ],
+});
+
+
+// 2. change the rule that compiles the code.
+in webpack.common.js
+#move this from common to webpack.dev.js
+/ {
+/   test: /\.scss$/,
+/   use: ["style-loader", "css-loader", "sass-loader"],
+/ },
+
+module.exports = merge(common, {
+  mode: "development",
+  module: {
+    rules: [
+      {
+        test: /\.scss$/,
+        use: ["style-loader", "css-loader", "sass-loader"],
+      },
+    ],
+  },
+});
+
+
+//3. in webpack.prod.js
+cconst MiniCssExtractPlugin = require("mini-css-extract-plugin");
+module.exports = merge(common, {
+  mode: "production",
+  module: {
+    rules: [
+      {
+        test: /\.scss$/,
+        use: [MiniCssExtractPlugin.loader, "css-loader", "sass-loader"],
+      },
+    ],
+  },
+  plugins: [
+    new CleanWebpackPlugin(),
+    new MiniCssExtractPlugin({ filename: "[name].[contentHash].css" }),
+  ],
+});
+
+/--- minifing css 
+npm i optimize-css-assets-webpack-plugin --save-dev
+
+// webpack.prod.js
+const OptimizeCssAssetsWebpackPlugin = require("optimize-css-assets-webpack-plugin");
+module.exports = merge(common, {
+  mode: "production",
+  optimization: {
+    minimizer: [new OptimizeCssAssetsWebpackPlugin()],
+  },
+});
+# now our css will be minified , but we are overriding the default js minimizer , 
+# so we no longer have minified js
+# enable js minifiing -> 
+
+const OptimizeCssAssetsWebpackPlugin = require("optimize-css-assets-webpack-plugin");
+const TerserWebpackPlugin = require("terser-webpack-plugin");  // built-in no need to install
+module.exports = merge(common, {
+  mode: "production",
+  optimization: {
+    minimizer: [
+      new OptimizeCssAssetsWebpackPlugin(),
+      new TerserWebpackPlugin(),
+    ],
+  },
+});
+
+--- minifing html;
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+# 1. remove this from webpack.common.js
+/  plugins: [
+/    new HtmlWebpackPlugin({
+/      template: "./src/template.html",
+/    }),
+/  ],
+
+# 2. add it to dev
+module.exports = merge(common, {
+  mode: "development",
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: "./src/template.html",
+    }),
+  ],
+});
+
+#3 enable html minifing in webpack.prod.js
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+
+module.exports = merge(common, {
+  mode: "production",
+  optimization: {
+    minimizer: [
+      new OptimizeCssAssetsWebpackPlugin(),
+      new TerserWebpackPlugin(),
+      new HtmlWebpackPlugin({
+        template: "./src/template.html",
+        minify: {
+          removeAttributeQuotes: true,
+          collapseWhitespace: true,
+          removeComments: true,
+        },
+      }),
+    ],
+  },
+});
